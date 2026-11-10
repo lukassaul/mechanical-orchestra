@@ -29,7 +29,9 @@ def test_drums_repeat_and_finish_within_piece():
     instrument = FakeInstrument()
     Drummer(instrument).perform(Piece(bars=2), 100)
     kicks = [e for e in instrument.received if e.on and e.pitch == 36]
-    assert [e.beat for e in kicks] == [0, 4]
+    assert [e.beat for e in kicks] == [0, 2, 2.5, 4, 6, 6.5]
+    hats = [e for e in instrument.received if e.on and e.pitch == 42]
+    assert len(hats) == 16
 
 
 def test_melody_uses_supplied_notes():

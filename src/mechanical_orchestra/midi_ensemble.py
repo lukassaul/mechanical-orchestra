@@ -139,24 +139,44 @@ class Organist:
 
 
 class Drummer:
-    def __init__(self, instrument: FluidSynthInstrument):
+    """A punchy, repeating 4/4 groove with a small fill every four bars."""
+
+    def __init__(self, instrument: FluidSynthInstrument, gain: float = 1.8):
         self.instrument = instrument
+        self.gain = gain
 
     def events(self, piece: Piece) -> list[MidiEvent]:
-        events = []
-        for beat in range(piece.total_beats):
-            hits = [42]  # closed hi-hat on every beat
-            if beat % piece.beats_per_bar == 0:
-                hits.append(36)  # kick
-            if beat % piece.beats_per_bar in (1, 3):
-                hits.append(38)  # snare
-            for pitch in hits:
-                events.extend([MidiEvent(float(beat), pitch, 95, True),
-                               MidiEvent(min(beat + 0.12, piece.total_beats), pitch, 0, False)])
+        events: list[MidiEvent] = []
+
+        def hit(beat: float, pitch: int, velocity: int, length: float = 0.10) -> None:
+            events.append(MidiEvent(beat, pitch, velocity, True))
+            events.append(MidiEvent(min(beat + length, piece.total_beats), pitch, 0, False))
+
+        for bar in range(piece.bars):
+            start = bar * piece.beats_per_bar
+            # Eight hi-hats per 4/4 bar, alternating accents.
+            for step in range(piece.beats_per_bar * 2):
+                hit(start + step * 0.5, 42, 90 if step % 2 == 0 else 70)
+
+            # Kick on 1 and 3, plus a pickup on the 'and' of 3.
+            for offset in (0, 2, 2.5):
+                if offset < piece.beats_per_bar:
+                    hit(start + offset, 36, 118 if offset == 0 else 105)
+
+            # Snare on beats 2 and 4.
+            for offset in (1, 3):
+                if offset < piece.beats_per_bar:
+                    hit(start + offset, 38, 120)
+
+            # A simple snare fill at the end of every fourth bar.
+            if (bar + 1) % 4 == 0 and piece.beats_per_bar == 4:
+                for offset in (3.25, 3.5, 3.75):
+                    hit(start + offset, 38, 78 + int(offset * 8), 0.07)
+
         return events
 
     def perform(self, piece: Piece, sample_rate: int = 44100) -> np.ndarray:
-        return self.instrument.render(self.events(piece), piece, sample_rate)
+        return self.instrument.render(self.events(piece), piece, sample_rate) * self.gain
 
 
 class MidiInstrumentFactory:

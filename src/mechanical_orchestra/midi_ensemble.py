@@ -21,6 +21,7 @@ class Note:
 class ChordChange:
     start_bar: int  # 1-based
     pitches: tuple[int, ...]
+    start_beat: float | None = None  # absolute, zero-based; overrides start_bar
 
 
 @dataclass(frozen=True)
@@ -121,20 +122,28 @@ class MelodyPlayer:
 
 class Organist:
     def __init__(self, instrument: FluidSynthInstrument, changes: Sequence[ChordChange]):
-        self.instrument, self.changes = instrument, sorted(changes, key=lambda c: c.start_bar)
+        self.instrument, self.changes = instrument, sorted(changes, key=self._beat)
+
+    @staticmethod
+    def _beat(chord: ChordChange) -> float:
+        return chord.start_beat if chord.start_beat is not None else (chord.start_bar - 1) * 4
 
     def events(self, piece: Piece) -> list[MidiEvent]:
-        if not self.changes or self.changes[0].start_bar != 1:
-            raise ValueError("Organist needs an initial chord at bar 1")
+        def position(chord: ChordChange) -> float:
+            return (chord.start_beat if chord.start_beat is not None
+                    else (chord.start_bar - 1) * piece.beats_per_bar)
+
+        changes = sorted(self.changes, key=position)
+        if not changes or position(changes[0]) != 0:
+            raise ValueError("Organist needs an initial chord at beat 0")
         events = []
-        for i, chord in enumerate(self.changes):
-            if not 1 <= chord.start_bar <= piece.bars:
+        for i, chord in enumerate(changes):
+            start = position(chord)
+            if not 0 <= start < piece.total_beats:
                 raise ValueError("Chord change outside piece")
-            if i and chord.start_bar <= self.changes[i - 1].start_bar:
-                raise ValueError("Chord changes must occur in distinct bars")
-            start = (chord.start_bar - 1) * piece.beats_per_bar
-            end = ((self.changes[i + 1].start_bar - 1) * piece.beats_per_bar
-                   if i + 1 < len(self.changes) else piece.total_beats)
+            end = position(changes[i + 1]) if i + 1 < len(changes) else piece.total_beats
+            if end <= start:
+                raise ValueError("Chord changes must be at distinct increasing beats")
             for pitch in chord.pitches:
                 events.extend([MidiEvent(start, pitch, 85, True),
                                MidiEvent(end, pitch, 0, False)])

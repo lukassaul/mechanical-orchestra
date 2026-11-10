@@ -16,7 +16,7 @@ from .musicxml import load_lead_sheet
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--score", type=Path, default=Path("scores/giant_steps_draft.musicxml"))
-    parser.add_argument("--bpm", type=float, default=160, help="Playback tempo (score marking: 286)")
+    parser.add_argument("--bpm", type=float, default=200, help="Playback tempo (score marking: 286)")
     args = parser.parse_args()
 
     score = load_lead_sheet(args.score, bpm=args.bpm)

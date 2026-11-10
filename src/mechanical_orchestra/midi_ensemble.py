@@ -67,8 +67,14 @@ class FluidSynthInstrument:
             if sfid < 0:
                 raise RuntimeError(f"Cannot load SoundFont: {self.soundfont}")
             channel = 9 if self.drums else 0
-            if not self.drums:
-                synth.program_select(channel, sfid, 0, self.program)
+            # General MIDI percussion kits live in bank 128. Selecting the
+            # SoundFont alone does not reliably configure channel 10.
+            bank = 128 if self.drums else 0
+            status = synth.program_select(channel, sfid, bank, self.program)
+            if status != 0:
+                raise RuntimeError(
+                    f"Could not select SoundFont preset: bank={bank}, program={self.program}"
+                )
             total_samples = round(piece.total_beats * 60 / piece.bpm * sample_rate)
             result = np.zeros((total_samples, 2), dtype=np.float32)
             cursor = 0

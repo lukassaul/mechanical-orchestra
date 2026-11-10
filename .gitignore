@@ -6,3 +6,8 @@ __pycache__/
 build/
 dist/
 *.wav
+
+# Downloaded SoundFonts (keep attribution/documentation in Git)
+assets/soundfonts/*.sf2
+assets/soundfonts/*.sf3
+assets/soundfonts/*.sfz

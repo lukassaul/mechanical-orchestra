@@ -24,6 +24,14 @@ pytest
 
 The demo writes `mechanical_orchestra_demo.wav` using synthetic tones and a gong-like sound. It requires no SoundFont or external synthesizer.
 
+## Install the GeneralUser GS SoundFont
+
+```bash
+python scripts/install_soundfonts.py
+```
+
+This downloads the official `GeneralUser-GS.sf2` to `assets/soundfonts/`. SoundFont binaries are ignored by Git. Use `--force` to redownload. See [SoundFont notes](assets/soundfonts/README.md) for provenance and licensing. The MIDI/FluidSynth adapter is a future milestone; downloading the SoundFont does not yet enable MIDI playback.
+
 ## Next milestones
 
 1. Expand the timeline to support tempo maps, bars, beats, and meter.

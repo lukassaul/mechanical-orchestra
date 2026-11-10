@@ -8,6 +8,8 @@ from typing import Sequence
 
 import numpy as np
 
+from .audio_effects import echo, leslie
+
 
 @dataclass(frozen=True)
 class Note:
@@ -50,10 +52,11 @@ class MidiEvent:
 class FluidSynthInstrument:
     """Instrument owns MIDI rendering; performers own musical decisions."""
 
-    def __init__(self, soundfont: str | Path, program: int = 19, drums: bool = False):
+    def __init__(self, soundfont: str | Path, program: int = 19, drums: bool = False, effect: str | None = None):
         self.soundfont = Path(soundfont)
         self.program = program
         self.drums = drums
+        self.effect = effect
 
     def render(self, events: Sequence[MidiEvent], piece: Piece, sample_rate: int = 44100) -> np.ndarray:
         try:
@@ -98,6 +101,12 @@ class FluidSynthInstrument:
             if cursor < total_samples:
                 chunk = np.asarray(synth.get_samples(total_samples - cursor), dtype=np.float32)
                 result[cursor:] = chunk.reshape(-1, 2) / 32768.0
+            if self.effect == 'leslie':
+                result = leslie(result, sample_rate)
+            elif self.effect == 'echo':
+                result = echo(result, sample_rate)
+            elif self.effect is not None:
+                raise ValueError(f'Unknown instrument effect: {self.effect}')
             return result
         finally:
             synth.delete()
@@ -199,11 +208,11 @@ class MidiInstrumentFactory:
         self.soundfont = Path(soundfont)
 
     def create(self, kind: str) -> FluidSynthInstrument:
-        presets = {"organ": (19, False), "melody": (66, False), "drums": (0, True)}
+        presets = {"organ": (19, False, "leslie"), "melody": (66, False, "echo"), "drums": (0, True, None)}
         if kind not in presets:
             raise ValueError(f"Unknown MIDI instrument: {kind}")
-        program, drums = presets[kind]
-        return FluidSynthInstrument(self.soundfont, program, drums)
+        program, drums, effect = presets[kind]
+        return FluidSynthInstrument(self.soundfont, program, drums, effect)
 
 
 def record_ensemble(performers: Sequence, piece: Piece, sample_rate: int = 44100) -> np.ndarray:

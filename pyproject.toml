@@ -12,6 +12,7 @@ dependencies = ["numpy>=1.24", "soundfile>=0.12"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]
+midi = ["pyfluidsynth>=1.3"]
 
 [tool.setuptools.packages.find]
 where = ["src"]

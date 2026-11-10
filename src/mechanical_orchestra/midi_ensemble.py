@@ -199,7 +199,7 @@ class MidiInstrumentFactory:
         self.soundfont = Path(soundfont)
 
     def create(self, kind: str) -> FluidSynthInstrument:
-        presets = {"organ": (19, False), "melody": (65, False), "drums": (0, True)}
+        presets = {"organ": (19, False), "melody": (66, False), "drums": (0, True)}
         if kind not in presets:
             raise ValueError(f"Unknown MIDI instrument: {kind}")
         program, drums = presets[kind]
